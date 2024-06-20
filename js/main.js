@@ -4,6 +4,7 @@ TODO: Minimize html by generating new brands w/ function
 
 */
 
+// global variables
 var canvas = document.getElementById('canvas');
 var ctx = canvas.getContext('2d');
 var photo_canvas = document.getElementById('photo_canvas');
