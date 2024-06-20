@@ -4,29 +4,22 @@ TODO: Minimize html by generating new brands w/ function
 
 */
 
-var canvas = document.getElementById('canvas')
+var canvas = document.getElementById('canvas');
 var ctx = canvas.getContext('2d');
-
 var photo_canvas = document.getElementById('photo_canvas');
 var photo_ctx = photo_canvas.getContext('2d');
-
 var bg_canvas = document.getElementById('bg_canvas');
 var bg_ctx = bg_canvas.getContext('2d');
 
-var author_color;
-// file reader
+var author_color = '#D28928';
 var reader;
 var cover_photo = new Image();
-
-// default properties of the book cover photo 
 var cover_properties = {
     x: 0,
     y: 0,
     width: 500,
     height: 533
 };
-
-// brand
 var brand = '';
 
 // file input
