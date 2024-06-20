@@ -47,14 +47,14 @@ function update(ctx, canvas) {
 function scale_image(photo_canvas, photo_ctx) {
     // width/height HTML ranges call this function 
     // to scale the image
-    width = document.getElementById("width_range").value;
-    height = document.getElementById("height_range").value;
+    var width = document.getElementById("width_range").value;
+    var height = document.getElementById("height_range").value;
 
-    cover_properties['width'] = 10 * width;
-    cover_properties['height'] = 10 * height;
+    cover_properties.width = 10 * width;
+    cover_properties.height = 10 * height;
 
-    update_cover(cover_photo, photo_canvas, photo_ctx, cover_properties['x'], cover_properties['y'],
-        cover_properties['width'], cover_properties['height']);
+    update_cover(cover_photo, photo_canvas, photo_ctx, cover_properties.x, cover_properties.y,
+        cover_properties.width, cover_properties.height);
 }
 
 function translate_image(canvas, photo_ctx) {
@@ -72,17 +72,17 @@ function translate_image(canvas, photo_ctx) {
 
 function load_cover(reader, cover_photo) {
     var file = document.querySelector('input[type=file]').files[0];
-    reader = new FileReader();    
+    reader = new FileReader();
 
     reader.onloadend = function() {
         cover_photo.src = reader.result;
         /*if (cover_photo.width > 1500 || cover_photo.height > 1500) {
             Materialize.toast('Warning: Large image files may be slow to manipulate!', 4000);
         }*/
-    };    
+    };
 
     if (file) {
-        if (file.type == 'image/jpeg' || file.type == 'image/png') {
+        if (file.type === 'image/jpeg' || file.type === 'image/png') {
             reader.readAsDataURL(file);
         } else {
             Materialize.toast(file.type + ' file type not accepted!', 4000);
@@ -102,7 +102,7 @@ function update_cover(cover_photo, photo_canvas, photo_ctx, x, y, width, height)
 
 function draw_template() {
     // draws the base template
-    var ctx = document.getElementById('bg_canvas').getContext('2d');
+    var ctx = bg_ctx;
     var template = new Image();
     template.onload = function() {
         ctx.drawImage(this, 0, 0, 500, 775);
@@ -118,54 +118,46 @@ function change_author_color(color) {
 }
 
 function draw_author(ctx, author_color) {
-    if (brand == 'penguin') {
-        author = document.getElementById("penguin_author").value;
-        ctx.font = '32px FuturaPTW01-Book';
-        if (author.length > 15) {
-            ctx.font = '26px FuturaPTW01-Book';
-        }
-        if (author.length > 30) {
-            ctx.font = '20px FuturaPTW01-Book';
-        }
+    const authorElement = document.getElementById(brand + "_author");
+    const author = authorElement.value;
+    const canvasWidth = canvas.width;
 
-        ctx.textBaseline = 'alphabetic';
+    if (brand === "penguin") {
+        ctx.font = author.length > 30 ? "20px FuturaPTW01-Book" : author.length > 15 ? "26px FuturaPTW01-Book" : "32px FuturaPTW01-Book";
+        ctx.textBaseline = "alphabetic";
         ctx.fillStyle = author_color;
-        ctx.textAlign = 'center'
-        ctx.fillText(author, canvas.width / 2, 651);
+        ctx.textAlign = "center";
+        ctx.fillText(author, canvasWidth / 2, 651);
     }
-    if (brand == 'oxford') {
-        author = document.getElementById("oxford_author").value;
-        ctx.font = '29px Capitolium';
-        if (author.length > 15) {
-            ctx.font = '26px Capitolium';
-        }
-        if (author.length > 30) {
-            ctx.font = '20px Capitolium';
-        }
 
-        ctx.textBaseline = 'alphabetic';
+    if (brand === "oxford") {
+        ctx.font = author.length > 30 ? "20px Capitolium" : author.length > 15 ? "26px Capitolium" : "29px Capitolium";
+        ctx.textBaseline = "alphabetic";
         ctx.fillStyle = "#cc2233";
-        ctx.textAlign = 'left'
-        ctx.fillText(author, canvas.width / 13, 568);
+        ctx.textAlign = "left";
+        ctx.fillText(author, canvasWidth / 13, 568);
     }
 }
 
 function draw_title(ctx) {
-    if (brand == 'penguin') {
-        title = document.getElementById("penguin_title").value;
-        ctx.font = '24px MrsEavesItalic';
-        ctx.textBaseline = 'alphabetic';
-        ctx.fillStyle = '#FFFFFF';
-        ctx.textAlign = 'center'
-        ctx.fillText(title, canvas.width / 2, 700);
+    const titleElement = document.getElementById(brand + "_title");
+    const title = titleElement.value;
+    const canvasWidth = canvas.width;
+
+    if (brand === "penguin") {
+        ctx.font = "24px MrsEavesItalic";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillStyle = "#FFFFFF";
+        ctx.textAlign = "center";
+        ctx.fillText(title, canvasWidth / 2, 700);
     }
-    if (brand == 'oxford') {
-        title = document.getElementById("oxford_title").value;
-        ctx.font = '29px Capitolium';
-        ctx.textBaseline = 'alphabetic';
-        ctx.fillStyle = '#42393E';
-        ctx.textAlign = 'left'
-        ctx.fillText(title, canvas.width / 13, 602);
+
+    if (brand === "oxford") {
+        ctx.font = "29px Capitolium";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillStyle = "#42393E";
+        ctx.textAlign = "left";
+        ctx.fillText(title, canvasWidth / 13, 602);
     }
 }
 
