@@ -243,3 +243,12 @@ button {
     border-radius: 5px;
     display: none;
 }
+
+/* Footer */
+footer {
+    color: #6b7280;
+    font-size: 12px;
+    margin-top: 20px;
+    padding: 10px;
+    text-align: center;
+}
