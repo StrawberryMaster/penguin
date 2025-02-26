@@ -291,9 +291,47 @@ function handleFileInput() {
 
     const reader = new FileReader();
     reader.onloadend = () => {
-        state.coverPhoto.src = reader.result;
+        const tempImg = new Image();
+        tempImg.onload = () => {
+            fitImageProportionally(tempImg.naturalWidth, tempImg.naturalHeight);
+            state.coverPhoto.src = reader.result;
+        };
+        tempImg.src = reader.result;
     };
     reader.readAsDataURL(file);
+}
+
+// to maintain aspect ratio and expand small images to fit the canvas
+function fitImageProportionally(imgWidth, imgHeight) {
+    const targetWidth = config.canvas.width;
+    const targetHeight = config.canvas.height;
+
+    const imageRatio = imgWidth / imgHeight;
+    const canvasRatio = targetWidth / targetHeight;
+
+    let newWidth = imgWidth;
+    let newHeight = imgHeight;
+
+    if (imgWidth < targetWidth || imgHeight < targetHeight) {
+        if (imageRatio > canvasRatio) {
+            newHeight = targetHeight;
+            newWidth = targetHeight * imageRatio;
+        } else {
+            newWidth = targetWidth;
+            newHeight = targetWidth / imageRatio;
+        }
+    }
+
+    state.coverProperties.width = newWidth;
+    state.coverProperties.height = newHeight;
+
+    state.coverProperties.x = (targetWidth - newWidth) / 2;
+    state.coverProperties.y = (targetHeight - newHeight) / 2;
+
+    elements.widthRange.value = newWidth / 10;
+    elements.heightRange.value = newHeight / 10;
+    elements.xRange.value = state.coverProperties.x / 10;
+    elements.yRange.value = -state.coverProperties.y / 5;
 }
 
 function debounce(func, wait) {
