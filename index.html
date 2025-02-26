@@ -1,118 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <!-- Icon -->
+    <meta charset="UTF-8">
     <link rel="icon" href="favicon.ico">
-
-    <!-- Title -->
     <title>Penguin Classics Cover Generator</title>
-
-    <!-- Import JQUERY -->
-    <script src="https://code.jquery.com/jquery-4.0.0-beta.min.js"></script>
-
-    <!-- Import Materialize stylesheet -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.99.0/css/materialize.min.css">
-
-    <!-- Import Materialize JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.99.0/js/materialize.min.js"></script>
-
-    <!-- Import main stylesheet -->
     <link rel="stylesheet" type="text/css" href="css/style.css">
-    </link>
 </head>
-
 <body>
-    <!-- Pre-load fonts -->
-    <div style="font-family: GillSansMT;"></div>
-    <div style="font-family: BemboStd;"></div>
-
-    <!-- Body -->
     <div class="container">
         <div class="row">
-            <div class="col s6">
-                <!-- CONTROLS -->
+            <div class="col">
                 <div id="controls">
-                    <!-- FILE UPLOAD -->
-                    <div class="card-panel white">
-                        <div class="file-field input-field">
-                            <form>
-                                <div class="waves-effect waves-light btn blue-grey darken-4">
-                                    <span>File</span>
-                                    <input type="file" id="file_input">
-                                </div>
-                                <div class="file-path-wrapper">
-                                    <input class="file-path validate" type="text" placeholder="Upload image file">
-                                </div>
-                        </div>
-                        </form>
+                    <!-- File Upload -->
+                    <div id="file-upload">
+                        <button id="file-button">Choose File</button>
+                        <input type="file" id="file_input" style="display: none;" accept="image/jpeg, image/png">
+                        <span id="file-name">No file chosen</span>
                     </div>
+
+                    <!-- Image Adjustments -->
+                    <div class="panel">
+                        <label>Width: <input type="range" id="width_range" value="50" min="10" max="100" oninput="scale_image()"></label><br>
+                        <label>Height: <input type="range" id="height_range" value="50" min="10" max="100" oninput="scale_image()"></label><br>
+                        <label>X: <input type="range" id="x_range" min="-500" max="500" value="0" oninput="translate_image()"></label><br>
+                        <label>Y: <input type="range" id="y_range" min="-500" max="500" value="0" oninput="translate_image()"></label>
+                    </div>
+
+                    <!-- Brand Selection -->
+                    <div id="brand-selection">
+                        <button class="brand-button" data-brand="penguin">Penguin</button>
+                        <button class="brand-button" data-brand="oxford">Oxford</button>
+                    </div>
+
+                    <!-- Brand-Specific Inputs -->
+                    <div id="penguin-inputs" class="brand-inputs">
+                    <div class="input-container">
+                        <input type="text" id="penguin_author" placeholder=" ">
+                        <label class="input-label" for="penguin_author">Author</label>
+                    </div>
+                    <div class="input-container">
+                        <input type="text" id="penguin_title" placeholder=" ">
+                        <label class="input-label" for="title">Title</label>
+                    </div>
+                    <p>Pick an author color:</p>
+                    <button class="color-button" style="background-color: #C6422C" data-color="#C6422C">Red</button>
+                    <button class="color-button" style="background-color: #D28928" data-color="#D28928">Yellow</button>
+                    </div>
+                    <div id="oxford-inputs" class="input-container brand-inputs">
+                    <div class="input-container">
+                        <input type="text" id="oxford_author" placeholder=" ">
+                        <label class="input-label" for="oxford">Author</label>
+                    </div>
+                    <div class="input-container">
+                        <input type="text" id="oxford_title" placeholder=" ">
+                        <label class="input-label" for="title">Title</label>
+                    </div></div>
                 </div>
-                <!-- END FILE UPLOAD -->
-
-                <div class="card-panel white">
-                    Width: <input type="range" class="range-field" oninput="scale_image(photo_canvas, photo_ctx)"
-                        id="width_range" value="50">
-                    <br />
-                    Height: <input type="range" class="range-field" oninput="scale_image(photo_canvas, photo_ctx)"
-                        id="height_range" value="50">
-                    <br />
-                    X: <input type="range" class="range-field" oninput="translate_image(photo_canvas, photo_ctx)"
-                        id="x_range" min="-500" max="500" value="0">
-                    <br />
-                    Y: <input type="range" class="range-field" oninput="translate_image(photo_canvas, photo_ctx)"
-                        id="y_range" min="-500" max="500" value="0">
-                </div>
-
-                <ul class="collapsible" data-collapsible="accordion">
-                    <!-- PENGUIN -->
-                    <li>
-                        <div class="collapsible-header" id="header-penguin" onclick="switch_brand('penguin');">
-                            Penguin
-                        </div>
-                        <div class="collapsible-body">
-                            <input type="text" id="penguin_author" placeholder="Author"></input>
-                            <input type="text" id="penguin_title" placeholder="Title"></input>
-
-                            <p>Pick an author color</p>
-                            <a class="waves-effect waves-light btn" style="background-color: #C6422C"
-                                onclick="change_author_color('#C6422C')">RED</a>
-                            <a class="waves-effect waves-light btn" style="background-color: #D28928"
-                                onclick="change_author_color('#D28928')">YELLOW</a>
-                        </div>
-                    </li>
-                    <!-- OXFORD -->
-                    <li>
-                        <div class="collapsible-header" id="header-oxford" onclick="switch_brand('oxford');">
-                            Oxford World Classics
-                        </div>
-                        <div class="collapsible-body">
-                            <input type="text" id="oxford_author" placeholder="Author"></input>
-                            <input type="text" id="oxford_title" placeholder="Title"></input>
-                        </div>
-                    </li>
-                </ul>
             </div>
-            <!-- END CONTROLS -->
-
-            <div class="col s6">
+            <div class="col">
+                <!-- Canvas Stack -->
                 <div id="canvas-wrapper">
                     <canvas id="photo_canvas" width="500" height="775"></canvas>
                     <canvas id="bg_canvas" width="500" height="775"></canvas>
                     <canvas id="canvas" width="500" height="775"></canvas>
-                    <canvas id="dl_canvas" width="500" height="775"></canvas>
+                    <canvas id="dl_canvas" width="500" height="775" style="display: none;"></canvas>
                 </div>
             </div>
         </div>
-
-        <!-- Footer -->
         <div class="row">
-            <button class="waves-effect waves-light btn-large blue-grey darken-4"
-                onclick="download_canvas(bg_canvas, photo_canvas, canvas)">Download</button>
+            <button id="download-button">Download</button>
         </div>
-
-        <!-- Import main JS script -->
-        <script src="js/main.js" type="text/javascript"></script>
+        <div id="notification"></div>
+    </div>
+    <script src="js/main.js" type="text/javascript"></script>
 </body>
-
 </html>
