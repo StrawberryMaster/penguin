@@ -25,8 +25,8 @@ const config = {
             titleFont: "29px 'Capitolium', serif",
             authorColor: '#cc2233',
             titleColor: '#42393E',
-            authorPosition: { align: 'left', x: 500 / 13, y: 568 },
-            titlePosition: { align: 'left', x: 500 / 13, y: 602 }
+            authorPosition: { align: 'left', x: 500 / 12.25, y: 568 },
+            titlePosition: { align: 'left', x: 500 / 12.25, y: 602 }
         }
     }
 };
