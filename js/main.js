@@ -453,7 +453,7 @@ function init() {
         showNotification("Jinkies! Canvas not supported or initialized correctly. Please refresh or use a different browser.");
         document.getElementById('controls').style.pointerEvents = 'none';
         document.getElementById('controls').style.opacity = '0.5';
-        return; n
+        return;
     }
 
     elements.canvas.width = config.canvas.width;
@@ -466,7 +466,7 @@ function init() {
     elements.dlCanvas.height = config.canvas.height;
 
     initEventListeners();
-    
+
     switchBrand(BRAND_PENGUIN);
 
     console.log("Cover generator initialized.");
