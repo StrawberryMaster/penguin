@@ -1,32 +1,45 @@
+const BRAND_PENGUIN = 'penguin';
+const BRAND_OXFORD = 'oxford';
+
 const config = {
     canvas: {
         width: 500,
         height: 775
     },
+    photoArea: {
+        yOffset: 0, // Y position where photo area starts
+        height: 533 // approximate height of the photo area
+    },
     brands: {
-        penguin: {
+        [BRAND_PENGUIN]: {
             authorFont: {
                 small: "20px 'FuturaPTW01-Book', sans-serif",
                 medium: "26px 'FuturaPTW01-Book', sans-serif",
                 large: "32px 'FuturaPTW01-Book', sans-serif"
             },
             titleFont: "24px 'MrsEavesItalic', serif",
+            subtitleFont: "18px 'MrsEavesItalic', serif",
             authorColor: '#D28928',
             titleColor: '#FFFFFF',
+            subtitleColor: '#FFFFFF',
             authorPosition: { align: 'center', x: 250, y: 651 },
-            titlePosition: { align: 'center', x: 250, y: 700 }
+            titlePosition: { align: 'center', x: 250, y: 685 },
+            subtitlePosition: { align: 'center', x: 250, y: 710 }
         },
-        oxford: {
+        [BRAND_OXFORD]: {
             authorFont: {
                 small: "20px 'Capitolium', serif",
                 medium: "26px 'Capitolium', serif",
                 large: "29px 'Capitolium', serif"
             },
             titleFont: "29px 'Capitolium', serif",
+            subtitleFont: "22px 'Capitolium', serif",
             authorColor: '#cc2233',
             titleColor: '#42393E',
+            subtitleColor: '#42393E',
             authorPosition: { align: 'left', x: 500 / 12.25, y: 568 },
-            titlePosition: { align: 'left', x: 500 / 12.25, y: 602 }
+            titlePosition: { align: 'left', x: 500 / 12.25, y: 602 },
+            subtitlePosition: { align: 'left', x: 500 / 12.25, y: 630 }
         }
     }
 };
@@ -39,43 +52,72 @@ const elements = {
     fileInput: document.getElementById('file_input'),
     fileButton: document.getElementById('file-button'),
     fileName: document.getElementById('file-name'),
-    widthRange: document.getElementById('width_range'),
-    heightRange: document.getElementById('height_range'),
-    xRange: document.getElementById('x_range'),
-    yRange: document.getElementById('y_range'),
+    zoomRange: document.getElementById('zoom_range'),
+    panXRange: document.getElementById('pan_x_range'),
+    panYRange: document.getElementById('pan_y_range'),
+    zoomValueSpan: document.getElementById('zoom_value'),
+    panXValueSpan: document.getElementById('pan_x_value'),
+    panYValueSpan: document.getElementById('pan_y_value'),
+    resetImageButton: document.getElementById('reset_image_button'),
     downloadButton: document.getElementById('download-button'),
     notification: document.getElementById('notification'),
     brandButtons: document.querySelectorAll('.brand-button'),
-    colorButtons: document.querySelectorAll('.color-button')
+    penguinInputs: document.getElementById('penguin-inputs'),
+    oxfordInputs: document.getElementById('oxford-inputs'),
+    colorButtons: document.querySelectorAll('#penguin-inputs .color-button')
+};
+
+const getContext = (canvas) => {
+    if (!canvas || !canvas.getContext) {
+        console.error("Could not get canvas or context for:", canvas);
+        return null;
+    }
+    return canvas.getContext('2d');
 };
 
 const ctx = {
-    main: elements.canvas.getContext('2d'),
-    photo: elements.photoCanvas.getContext('2d'),
-    bg: elements.bgCanvas.getContext('2d'),
-    dl: elements.dlCanvas.getContext('2d')
+    main: getContext(elements.canvas),
+    photo: getContext(elements.photoCanvas),
+    bg: getContext(elements.bgCanvas),
+    dl: getContext(elements.dlCanvas)
 };
+
+const areContextsValid = Object.values(ctx).every(c => c !== null);
 
 const state = {
     brand: '',
-    authorColor: config.brands.penguin.authorColor,
+    authorColor: '',
     coverPhoto: new Image(),
     templateImg: new Image(),
-    coverProperties: { x: 0, y: 0, width: 500, height: 533 },
+    originalFit: { x: 0, y: 0, width: 0, height: 0 },
+    transform: { scale: 1.0, panX: 0, panY: 0 },
     isTemplateLoaded: false,
     isPhotoLoaded: false
 };
 
-// helper functions
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func.apply(this, args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
 function getInputValues() {
+    if (!state.brand) return { author: '', title: '', subtitle: '' };
     return {
         author: document.getElementById(`${state.brand}_author`)?.value || '',
-        title: document.getElementById(`${state.brand}_title`)?.value || ''
+        title: document.getElementById(`${state.brand}_title`)?.value || '',
+        subtitle: document.getElementById(`${state.brand}_subtitle`)?.value || ''
     };
 }
 
 function getBrandConfig() {
-    return config.brands[state.brand] || config.brands.penguin;
+    return config.brands[state.brand] || config.brands[BRAND_PENGUIN];
 }
 
 function getAuthorFontSize(authorLength) {
@@ -86,9 +128,12 @@ function getAuthorFontSize(authorLength) {
 }
 
 function showNotification(message, duration = 4000) {
+    if (!elements.notification) return;
     elements.notification.textContent = message;
     elements.notification.style.display = 'block';
-    setTimeout(() => elements.notification.style.display = 'none', duration);
+    setTimeout(() => {
+        elements.notification.style.display = 'none';
+    }, duration);
 }
 
 function updateBrandUI(brandName) {
@@ -103,58 +148,98 @@ function updateBrandUI(brandName) {
 
 function drawAuthor(author) {
     const brandConfig = getBrandConfig();
-    const ctx = state.ctx.main;
+    const ctxMain = ctx.main;
+    if (!ctxMain) return;
 
-    ctx.textBaseline = 'alphabetic';
-    ctx.font = getAuthorFontSize(author.length);
-    ctx.fillStyle = state.authorColor;
-    ctx.textAlign = brandConfig.authorPosition.align;
-    ctx.fillText(author, brandConfig.authorPosition.x, brandConfig.authorPosition.y);
+    ctxMain.textBaseline = 'alphabetic';
+    ctxMain.font = getAuthorFontSize(author.length);
+    ctxMain.textAlign = brandConfig.authorPosition.align;
+    ctxMain.fillText(author, brandConfig.authorPosition.x, brandConfig.authorPosition.y);
 }
 
 function drawTitle(title) {
     const brandConfig = getBrandConfig();
-    const ctx = state.ctx.main;
+    const ctxMain = ctx.main;
+    if (!ctxMain) return;
 
-    ctx.textBaseline = 'alphabetic';
-    ctx.font = brandConfig.titleFont;
-    ctx.fillStyle = brandConfig.titleColor;
-    ctx.textAlign = brandConfig.titlePosition.align;
-    ctx.fillText(title, brandConfig.titlePosition.x, brandConfig.titlePosition.y);
+    ctxMain.textBaseline = 'alphabetic';
+    ctxMain.font = brandConfig.titleFont;
+    ctxMain.fillStyle = brandConfig.titleColor;
+    ctxMain.textAlign = brandConfig.titlePosition.align;
+    ctxMain.fillText(title, brandConfig.titlePosition.x, brandConfig.titlePosition.y);
+}
+
+function drawSubtitle(subtitle) {
+    if (!subtitle) return;
+
+    const brandConfig = getBrandConfig();
+    const ctxMain = ctx.main;
+    if (!ctxMain) return;
+
+    ctxMain.textBaseline = 'alphabetic';
+    ctxMain.font = brandConfig.subtitleFont;
+    ctxMain.fillStyle = brandConfig.subtitleColor;
+    ctxMain.textAlign = brandConfig.subtitlePosition.align;
+    ctxMain.fillText(subtitle, brandConfig.subtitlePosition.x, brandConfig.subtitlePosition.y);
 }
 
 function drawTemplate() {
+    const ctxBg = ctx.bg;
+    if (!ctxBg) return;
+    ctxBg.clearRect(0, 0, config.canvas.width, config.canvas.height);
     if (state.isTemplateLoaded) {
-        ctx.bg.drawImage(state.templateImg, 0, 0, config.canvas.width, config.canvas.height);
+        ctxBg.drawImage(state.templateImg, 0, 0, config.canvas.width, config.canvas.height);
     }
 }
 
 function updateCoverPhoto() {
-    ctx.photo.clearRect(0, 0, elements.photoCanvas.width, elements.photoCanvas.height);
-    if (state.isPhotoLoaded) {
-        ctx.photo.drawImage(
+    const ctxPhoto = ctx.photo;
+    if (!ctxPhoto) return;
+
+    ctxPhoto.clearRect(0, 0, config.canvas.width, config.canvas.height);
+
+    if (state.isPhotoLoaded && state.originalFit.width > 0) {
+        const base = state.originalFit;
+        const transform = state.transform;
+
+        const scaledWidth = base.width * transform.scale;
+        const scaledHeight = base.height * transform.scale;
+
+        const centerX = base.x + base.width / 2;
+        const centerY = base.y + base.height / 2;
+
+        let drawX = centerX - scaledWidth / 2;
+        let drawY = centerY - scaledHeight / 2;
+
+        drawX += transform.panX;
+        drawY += transform.panY;
+
+        ctxPhoto.drawImage(
             state.coverPhoto,
-            state.coverProperties.x,
-            state.coverProperties.y,
-            state.coverProperties.width,
-            state.coverProperties.height
+            drawX,
+            drawY,
+            scaledWidth,
+            scaledHeight
         );
     }
 }
 
 function updateText() {
-    const { author, title } = getInputValues();
+    const { author, title, subtitle } = getInputValues();
+    const ctxMain = ctx.main;
+    if (!ctxMain) return;
 
-    ctx.main.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
+    ctxMain.clearRect(0, 0, config.canvas.width, config.canvas.height);
     if (state.brand) {
         drawAuthor(author);
         drawTitle(title);
+        drawSubtitle(subtitle);
     }
 }
 
 function switchBrand(brandName) {
     if (!config.brands[brandName]) {
-        showNotification(`Brand "${brandName}" not found`);
+        showNotification(`Error: Brand "${brandName}" configuration not found.`);
         return;
     }
 
@@ -162,29 +247,41 @@ function switchBrand(brandName) {
     state.isTemplateLoaded = false;
     updateBrandUI(brandName);
 
-    // load image template
-    ctx.bg.clearRect(0, 0, elements.bgCanvas.width, elements.bgCanvas.height);
+    if (ctx.bg) ctx.bg.clearRect(0, 0, config.canvas.width, config.canvas.height);
     state.templateImg.src = `template_${brandName}.png`;
 
-    // reset color to default
-    state.authorColor = config.brands[brandName].authorColor;
+    state.authorColor = getBrandConfig().authorColor;
 
-    setupTextListeners();
-}
-
-function changeAuthorColor(color) {
-    state.authorColor = color;
     updateText();
 }
 
+function changeAuthorColor(color) {
+    if (state.brand === BRAND_PENGUIN) {
+        state.authorColor = color;
+        updateText();
+    } else {
+        showNotification("Color change is only available for Penguin brand.");
+    }
+}
+
 function downloadCanvas() {
-    ctx.dl.clearRect(0, 0, elements.dlCanvas.width, elements.dlCanvas.height);
-    ctx.dl.drawImage(elements.photoCanvas, 0, 0);
-    ctx.dl.drawImage(elements.bgCanvas, 0, 0);
-    ctx.dl.drawImage(elements.canvas, 0, 0);
+    const ctxDl = ctx.dl;
+    if (!ctxDl || !elements.photoCanvas || !elements.bgCanvas || !elements.canvas || !elements.dlCanvas) {
+        showNotification('Error preparing download: Canvas element missing.');
+        return;
+    }
+
+    elements.dlCanvas.width = config.canvas.width;
+    elements.dlCanvas.height = config.canvas.height;
+
+    ctxDl.clearRect(0, 0, config.canvas.width, config.canvas.height);
+    ctxDl.drawImage(elements.photoCanvas, 0, 0);
+    ctxDl.drawImage(elements.bgCanvas, 0, 0);
+    ctxDl.drawImage(elements.canvas, 0, 0);
 
     const imageURL = elements.dlCanvas.toDataURL('image/png');
-    const fileName = getInputValues().title || 'cover';
+    const fileNameBase = getInputValues().title || 'classic-cover';
+    const fileName = fileNameBase.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.png';
 
     const downloadLink = document.createElement('a');
     downloadLink.href = imageURL;
@@ -193,95 +290,55 @@ function downloadCanvas() {
     downloadLink.click();
     document.body.removeChild(downloadLink);
 
-    showNotification('Downloading!');
+    showNotification('Downloading your cover!');
 }
 
-function scaleImage() {
-    state.coverProperties.width = 10 * elements.widthRange.value;
-    state.coverProperties.height = 10 * elements.heightRange.value;
+function applyZoom() {
+    if (!elements.zoomRange || !elements.zoomValueSpan) return;
+    const scaleValue = parseInt(elements.zoomRange.value, 10);
+    state.transform.scale = scaleValue / 100;
+    elements.zoomValueSpan.textContent = `${scaleValue}%`;
     updateCoverPhoto();
 }
 
-function translateImage() {
-    state.coverProperties.x = 10 * elements.xRange.value;
-    state.coverProperties.y = -5 * elements.yRange.value;
+function applyPan() {
+    if (!elements.panXRange || !elements.panYRange || !elements.panXValueSpan || !elements.panYValueSpan) return;
+    state.transform.panX = parseInt(elements.panXRange.value, 10);
+    state.transform.panY = parseInt(elements.panYRange.value, 10);
+    elements.panXValueSpan.textContent = state.transform.panX;
+    elements.panYValueSpan.textContent = state.transform.panY;
     updateCoverPhoto();
 }
 
-function setupTextListeners() {
-    const authorInput = document.getElementById(`${state.brand}_author`);
-    const titleInput = document.getElementById(`${state.brand}_title`);
+function resetImageTransform() {
+    if (!elements.zoomRange || !elements.panXRange || !elements.panYRange || !elements.zoomValueSpan || !elements.panXValueSpan || !elements.panYValueSpan) return;
 
-    if (authorInput && titleInput) {
-        const newAuthorInput = authorInput.cloneNode(true);
-        const newTitleInput = titleInput.cloneNode(true);
+    state.transform = { scale: 1.0, panX: 0, panY: 0 };
 
-        authorInput.parentNode.replaceChild(newAuthorInput, authorInput);
-        titleInput.parentNode.replaceChild(newTitleInput, titleInput);
+    elements.zoomRange.value = 100;
+    elements.panXRange.value = 0;
+    elements.panYRange.value = 0;
+    elements.zoomValueSpan.textContent = `100%`;
+    elements.panXValueSpan.textContent = `0`;
+    elements.panYValueSpan.textContent = `0`;
 
-        newAuthorInput.addEventListener('input', updateText);
-        newTitleInput.addEventListener('input', updateText);
-    }
-}
-
-// event listeners
-function initEventListeners() {
-    elements.fileButton.addEventListener('click', () => elements.fileInput.click());
-    elements.fileInput.addEventListener('change', handleFileInput);
-
-    const debouncedScale = debounce(scaleImage, 100);
-    const debouncedTranslate = debounce(translateImage, 100);
-
-    elements.widthRange.addEventListener('input', debouncedScale);
-    elements.heightRange.addEventListener('input', debouncedScale);
-    elements.xRange.addEventListener('input', debouncedTranslate);
-    elements.yRange.addEventListener('input', debouncedTranslate);
-
-    elements.brandButtons.forEach(button => {
-        button.addEventListener('click', () => switchBrand(button.dataset.brand));
-    });
-
-    elements.colorButtons.forEach(button => {
-        button.addEventListener('click', () => changeAuthorColor(button.dataset.color));
-    });
-
-    elements.downloadButton.addEventListener('click', downloadCanvas);
-
-    state.templateImg.onload = () => {
-        state.isTemplateLoaded = true;
-        drawTemplate();
-        updateText();
-    };
-
-    state.templateImg.onerror = () => {
-        showNotification('Failed to load template image.');
-    };
-
-    state.coverPhoto.onload = () => {
-        state.isPhotoLoaded = true;
-        updateCoverPhoto();
-    };
+    updateCoverPhoto();
 }
 
 function handleFileInput() {
+    if (!elements.fileInput || !elements.fileInput.files || elements.fileInput.files.length === 0) {
+        elements.fileName.textContent = 'No file chosen';
+        return;
+    }
     const file = elements.fileInput.files[0];
-    if (!file) return;
 
-    // common file types
     const acceptedImageTypes = [
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'image/webp',
-        'image/bmp',
-        'image/tiff',
-        'image/svg+xml',
-        'image/avif',
-        'image/jxl'
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+        'image/bmp', 'image/svg+xml', 'image/avif'
     ];
 
     if (!acceptedImageTypes.includes(file.type)) {
-        showNotification(`${file.type} file type not accepted!`);
+        showNotification(`File type "${file.type}" is not (yet) supported. Supported types are: ${acceptedImageTypes.join(', ')}`);
         elements.fileInput.value = '';
         elements.fileName.textContent = 'No file chosen';
         return;
@@ -296,58 +353,123 @@ function handleFileInput() {
             fitImageProportionally(tempImg.naturalWidth, tempImg.naturalHeight);
             state.coverPhoto.src = reader.result;
         };
+        tempImg.onerror = () => {
+            showNotification('Error reading image dimensions.');
+            state.isPhotoLoaded = false;
+            if (ctx.photo) ctx.photo.clearRect(0, 0, config.canvas.width, config.canvas.height);
+        }
         tempImg.src = reader.result;
+    };
+    reader.onerror = () => {
+        showNotification('Error reading file.');
+        elements.fileInput.value = '';
+        elements.fileName.textContent = 'No file chosen';
     };
     reader.readAsDataURL(file);
 }
 
-// to maintain aspect ratio and expand small images to fit the canvas
 function fitImageProportionally(imgWidth, imgHeight) {
+    if (imgWidth <= 0 || imgHeight <= 0) {
+        console.error("Invalid image dimensions for fitting.");
+        return;
+    }
     const targetWidth = config.canvas.width;
-    const targetHeight = config.canvas.height;
+    const targetPhotoHeight = config.photoArea.height;
+    const targetPhotoYOffset = config.photoArea.yOffset;
 
     const imageRatio = imgWidth / imgHeight;
-    const canvasRatio = targetWidth / targetHeight;
+    const targetRatio = targetWidth / targetPhotoHeight;
 
-    let newWidth = imgWidth;
-    let newHeight = imgHeight;
+    let fitWidth, fitHeight;
 
-    if (imgWidth < targetWidth || imgHeight < targetHeight) {
-        if (imageRatio > canvasRatio) {
-            newHeight = targetHeight;
-            newWidth = targetHeight * imageRatio;
-        } else {
-            newWidth = targetWidth;
-            newHeight = targetWidth / imageRatio;
-        }
+    if (imageRatio >= targetRatio) {
+        fitHeight = targetPhotoHeight;
+        fitWidth = fitHeight * imageRatio;
+    } else {
+        fitWidth = targetWidth;
+        fitHeight = fitWidth / imageRatio;
     }
 
-    state.coverProperties.width = newWidth;
-    state.coverProperties.height = newHeight;
+    const fitX = (targetWidth - fitWidth) / 2;
+    const fitY = targetPhotoYOffset + (targetPhotoHeight - fitHeight) / 2;
 
-    state.coverProperties.x = (targetWidth - newWidth) / 2;
-    state.coverProperties.y = (targetHeight - newHeight) / 2;
+    state.originalFit = { x: fitX, y: fitY, width: fitWidth, height: fitHeight };
 
-    elements.widthRange.value = newWidth / 10;
-    elements.heightRange.value = newHeight / 10;
-    elements.xRange.value = state.coverProperties.x / 10;
-    elements.yRange.value = -state.coverProperties.y / 5;
+    resetImageTransform();
 }
 
-function debounce(func, wait) {
-    let timeout;
-    return function (...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
+function initEventListeners() {
+    if (elements.fileButton) elements.fileButton.addEventListener('click', () => elements.fileInput.click());
+    if (elements.fileInput) elements.fileInput.addEventListener('change', handleFileInput);
+
+    const debouncedZoom = debounce(applyZoom, 50);
+    const debouncedPan = debounce(applyPan, 50);
+    if (elements.zoomRange) elements.zoomRange.addEventListener('input', debouncedZoom);
+    if (elements.panXRange) elements.panXRange.addEventListener('input', debouncedPan);
+    if (elements.panYRange) elements.panYRange.addEventListener('input', debouncedPan);
+
+    if (elements.resetImageButton) elements.resetImageButton.addEventListener('click', resetImageTransform);
+
+    elements.brandButtons.forEach(button => {
+        button.addEventListener('click', () => switchBrand(button.dataset.brand));
+    });
+
+    elements.colorButtons.forEach(button => {
+        button.addEventListener('click', () => changeAuthorColor(button.dataset.color));
+    });
+
+    const handleTextInput = (event) => {
+        if (event.target.tagName === 'INPUT' && event.target.closest('.brand-inputs')?.id === `${state.brand}-inputs`) {
+            updateText();
+        }
+    };
+    if (elements.penguinInputs) elements.penguinInputs.addEventListener('input', handleTextInput);
+    if (elements.oxfordInputs) elements.oxfordInputs.addEventListener('input', handleTextInput);
+
+    if (elements.downloadButton) elements.downloadButton.addEventListener('click', downloadCanvas);
+
+    state.templateImg.onload = () => {
+        state.isTemplateLoaded = true;
+        drawTemplate();
+    };
+    state.templateImg.onerror = () => {
+        showNotification('Error: Failed to load background template image.');
+        state.isTemplateLoaded = false;
+    };
+
+    state.coverPhoto.onload = () => {
+        state.isPhotoLoaded = true;
+        updateCoverPhoto();
+    };
+    state.coverPhoto.onerror = () => {
+        showNotification('Error loading the selected image.');
+        state.isPhotoLoaded = false;
+        if (ctx.photo) ctx.photo.clearRect(0, 0, config.canvas.width, config.canvas.height);
     };
 }
 
 function init() {
-    state.ctx = ctx;
+    if (!areContextsValid) {
+        showNotification("Jinkies! Canvas not supported or initialized correctly. Please refresh or use a different browser.");
+        document.getElementById('controls').style.pointerEvents = 'none';
+        document.getElementById('controls').style.opacity = '0.5';
+        return; n
+    }
+
+    elements.canvas.width = config.canvas.width;
+    elements.canvas.height = config.canvas.height;
+    elements.photoCanvas.width = config.canvas.width;
+    elements.photoCanvas.height = config.canvas.height;
+    elements.bgCanvas.width = config.canvas.width;
+    elements.bgCanvas.height = config.canvas.height;
+    elements.dlCanvas.width = config.canvas.width;
+    elements.dlCanvas.height = config.canvas.height;
 
     initEventListeners();
+/
+    switchBrand(BRAND_PENGUIN);
 
-    switchBrand('penguin');
+    console.log("Cover generator initialized.");
 }
 
 document.addEventListener('DOMContentLoaded', init);
