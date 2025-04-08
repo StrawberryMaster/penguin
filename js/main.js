@@ -466,7 +466,7 @@ function init() {
     elements.dlCanvas.height = config.canvas.height;
 
     initEventListeners();
-/
+    
     switchBrand(BRAND_PENGUIN);
 
     console.log("Cover generator initialized.");
