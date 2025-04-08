@@ -154,6 +154,8 @@ function drawAuthor(author) {
     ctxMain.textBaseline = 'alphabetic';
     ctxMain.font = getAuthorFontSize(author.length);
     ctxMain.textAlign = brandConfig.authorPosition.align;
+    
+    ctxMain.fillStyle = state.authorColor;
     ctxMain.fillText(author, brandConfig.authorPosition.x, brandConfig.authorPosition.y);
 }
 
