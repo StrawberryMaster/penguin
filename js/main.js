@@ -300,6 +300,7 @@ function applyZoom() {
     const scaleValue = parseInt(elements.zoomRange.value, 10);
     state.transform.scale = scaleValue / 100;
     elements.zoomValueSpan.textContent = `${scaleValue}%`;
+Mor    updatePanRange();
     updateCoverPhoto();
 }
 
@@ -310,6 +311,18 @@ function applyPan() {
     elements.panXValueSpan.textContent = state.transform.panX;
     elements.panYValueSpan.textContent = state.transform.panY;
     updateCoverPhoto();
+}
+
+function updatePanRange() {
+    const scale = state.transform.scale;
+    const baseRange = 100;
+    const extraRange = Math.floor((scale - 1) * 200);
+    const panLimit = baseRange + Math.max(0, extraRange);
+
+    elements.panXRange.min = -panLimit;
+    elements.panXRange.max = panLimit;
+    elements.panYRange.min = -panLimit;
+    elements.panYRange.max = panLimit;
 }
 
 function resetImageTransform() {
