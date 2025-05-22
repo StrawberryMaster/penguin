@@ -300,7 +300,7 @@ function applyZoom() {
     const scaleValue = parseInt(elements.zoomRange.value, 10);
     state.transform.scale = scaleValue / 100;
     elements.zoomValueSpan.textContent = `${scaleValue}%`;
-Mor    updatePanRange();
+    updatePanRange();
     updateCoverPhoto();
 }
 
