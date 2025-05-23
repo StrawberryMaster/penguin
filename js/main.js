@@ -349,7 +349,10 @@ function handleFileInput() {
 
     const acceptedImageTypes = [
         'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-        'image/bmp', 'image/svg+xml', 'image/avif'
+        'image/bmp', 'image/svg+xml', 'image/avif', 'image/jxl',
+        'image/tiff', 'image/heif', 'image/heic', 'image/jp2',
+        'image/jpx', 'image/jpm', 'image/jpf', 'image/jxr',
+        'image/tga', 'image/tiff'
     ];
 
     if (!acceptedImageTypes.includes(file.type)) {
