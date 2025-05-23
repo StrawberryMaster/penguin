@@ -3,6 +3,7 @@
     src: url('../fonts/MrsEavesItalic.woff') format('woff');
     font-weight: 100;
     font-style: italic;
+    font-display: swap;
 }
 
 @font-face {
@@ -118,6 +119,10 @@ button {
 }
 
 /* The new slider controls */
+.slider-control {
+    contain: layout style;
+}
+
 .panel .slider-control {
     display: flex;
     align-items: center;
