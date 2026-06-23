@@ -1,4 +1,25 @@
 @font-face {
+    font-family: 'Banner';
+    src: url('../fonts/FuturaPT-Heavy-3GWvQtBU.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Title';
+    src: url('../fonts/FuturaStd-Medium-DYTExAzX.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Subtitle';
+    src: url('../fonts/MrsEavesOT-Italic-BUa6VDgq.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
     font-family: 'MrsEavesItalic';
     src: url('../fonts/MrsEavesItalic.woff') format('woff');
     font-weight: 100;
@@ -118,9 +139,10 @@ button {
     color: #333;
 }
 
-/* The new slider controls */
-.slider-control {
-    contain: layout style;
+/* Controls */
+._controls_sos1r_25 {
+  margin:calc(-1 * var(--spacing-4));
+  display:flex
 }
 
 .panel .slider-control {
