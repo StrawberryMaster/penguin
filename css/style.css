@@ -62,7 +62,8 @@ html {
 
 body,
 input,
-button {
+button,
+select {
     font-family: 'Inter', sans-serif;
 }
 
@@ -144,7 +145,7 @@ button {
     padding: 15px;
     border-radius: 5px;
     border: 1px solid #eee;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
 }
 
 .panel h2 {
@@ -247,7 +248,37 @@ button {
     padding: 0 0.25rem;
 }
 
-/* File upload */
+/* Custom styling for Select Dropdown elements */
+.select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+#controls select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: #fff;
+    color: #333;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%236b7280%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpolyline%20points%3D%276%209%2012%2015%2018%209%27%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease-in-out;
+}
+
+#controls select:focus {
+    border-color: #f60;
+    outline: none;
+}
+
 #file-upload {
     margin-bottom: 15px;
 }
@@ -326,6 +357,7 @@ button {
     cursor: pointer;
     font-size: 16px;
     font-weight: bold;
+    margin-top: .5rem;
     padding: .5rem 1rem;
     transition: background 0.2s;
     width: 100%;

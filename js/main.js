@@ -64,7 +64,8 @@ const elements = {
     brandButtons: document.querySelectorAll('.brand-button'),
     penguinInputs: document.getElementById('penguin-inputs'),
     oxfordInputs: document.getElementById('oxford-inputs'),
-    colorButtons: document.querySelectorAll('#penguin-inputs .color-button')
+    colorButtons: document.querySelectorAll('#penguin-inputs .color-button'),
+    exportSize: document.getElementById('export_size')
 };
 
 const getContext = (canvas) => {
@@ -89,7 +90,6 @@ const ctx = {
 
 const areContextsValid = Object.values(ctx).every(c => c !== null);
 
-// Hotlinked Penguin SVG image asset from penguin.jos.ht
 const penguinLogoImg = new Image();
 penguinLogoImg.src = './assets/penguin-logo.svg';
 penguinLogoImg.onload = () => {
@@ -150,6 +150,12 @@ function getAuthorFontSize(authorLength) {
     return fonts.large;
 }
 
+function getScaledFont(fontStr, scale) {
+    return fontStr.replace(/(\d+)px/, (match, p1) => {
+        return `${Math.round(parseInt(p1, 10) * scale)}px`;
+    });
+}
+
 function showNotification(message, duration = 4000) {
     if (!elements.notification) return;
     elements.notification.textContent = message;
@@ -169,107 +175,117 @@ function updateBrandUI(brandName) {
     });
 }
 
-function drawAuthor(author) {
+function drawAuthor(author, context = ctx.main, scale = 1) {
+    if (!context) return;
     const brandConfig = getBrandConfig();
-    const ctxMain = ctx.main;
-    if (!ctxMain) return;
 
-    ctxMain.textBaseline = 'alphabetic';
-    ctxMain.font = getAuthorFontSize(author.length);
-    ctxMain.textAlign = brandConfig.authorPosition.align;
-    ctxMain.fillStyle = state.authorColor;
-    ctxMain.fillText(author, brandConfig.authorPosition.x, brandConfig.authorPosition.y);
+    context.textBaseline = 'alphabetic';
+    const originalFont = getAuthorFontSize(author.length);
+    context.font = getScaledFont(originalFont, scale);
+    context.textAlign = brandConfig.authorPosition.align;
+    context.fillStyle = state.authorColor;
+    context.fillText(
+        author,
+        Math.round(brandConfig.authorPosition.x * scale),
+        Math.round(brandConfig.authorPosition.y * scale)
+    );
 }
 
-function drawTitle(title) {
+function drawTitle(title, context = ctx.main, scale = 1) {
+    if (!context) return;
     const brandConfig = getBrandConfig();
-    const ctxMain = ctx.main;
-    if (!ctxMain) return;
 
-    ctxMain.textBaseline = 'alphabetic';
-    ctxMain.font = brandConfig.titleFont;
-    ctxMain.fillStyle = brandConfig.titleColor;
-    ctxMain.textAlign = brandConfig.titlePosition.align;
-    ctxMain.fillText(title, brandConfig.titlePosition.x, brandConfig.titlePosition.y);
+    context.textBaseline = 'alphabetic';
+    context.font = getScaledFont(brandConfig.titleFont, scale);
+    context.fillStyle = brandConfig.titleColor;
+    context.textAlign = brandConfig.titlePosition.align;
+    context.fillText(
+        title,
+        Math.round(brandConfig.titlePosition.x * scale),
+        Math.round(brandConfig.titlePosition.y * scale)
+    );
 }
 
-function drawSubtitle(subtitle) {
-    if (!subtitle) return;
-
+function drawSubtitle(subtitle, context = ctx.main, scale = 1) {
+    if (!subtitle || !context) return;
     const brandConfig = getBrandConfig();
-    const ctxMain = ctx.main;
-    if (!ctxMain) return;
 
-    ctxMain.textBaseline = 'alphabetic';
-    ctxMain.font = brandConfig.subtitleFont;
-    ctxMain.fillStyle = brandConfig.subtitleColor;
-    ctxMain.textAlign = brandConfig.subtitlePosition.align;
-    ctxMain.fillText(subtitle, brandConfig.subtitlePosition.x, brandConfig.subtitlePosition.y);
+    context.textBaseline = 'alphabetic';
+    context.font = getScaledFont(brandConfig.subtitleFont, scale);
+    context.fillStyle = brandConfig.subtitleColor;
+    context.textAlign = brandConfig.subtitlePosition.align;
+    context.fillText(
+        subtitle,
+        Math.round(brandConfig.subtitlePosition.x * scale),
+        Math.round(brandConfig.subtitlePosition.y * scale)
+    );
 }
 
-function drawTemplate() {
-    const ctxBg = ctx.bg;
-    if (!ctxBg) return;
-    ctxBg.clearRect(0, 0, config.canvas.width, config.canvas.height);
+function drawTemplate(context = ctx.bg, scale = 1, clear = true) {
+    if (!context) return;
+
+    if (clear) {
+        context.clearRect(0, 0, config.canvas.width * scale, config.canvas.height * scale);
+    }
 
     if (state.brand === BRAND_PENGUIN) {
-        ctxBg.fillStyle = '#000000';
-        ctxBg.fillRect(0, 533, config.canvas.width, config.canvas.height - 533);
+        context.fillStyle = '#000000';
+        context.fillRect(0, Math.round(533 * scale), config.canvas.width * scale, (config.canvas.height - 533) * scale);
 
-        const bannerY = 533;
-        const bannerHeight = 38;
-        ctxBg.fillStyle = '#FFFFFF';
-        ctxBg.fillRect(0, bannerY, config.canvas.width, bannerHeight);
+        const bannerY = Math.round(533 * scale);
+        const bannerHeight = Math.round(38 * scale);
+        context.fillStyle = '#FFFFFF';
+        context.fillRect(0, bannerY, config.canvas.width * scale, bannerHeight);
 
         const isSpanish = document.documentElement.lang === 'es' || localStorage.getItem('i18nextLng')?.startsWith('es');
         const txtPenguin = "PENGUIN";
         const txtClassics = isSpanish ? "CLÁSICOS" : "CLASSICS";
 
-        ctxBg.fillStyle = '#000000';
-        ctxBg.textBaseline = 'middle';
-        ctxBg.font = "11px 'Banner', 'FuturaPT-Heavy', sans-serif";
+        context.fillStyle = '#000000';
+        context.textBaseline = 'middle';
+        context.font = `${Math.round(11 * scale)}px 'Banner', 'FuturaPT-Heavy', sans-serif`;
 
-        if ('letterSpacing' in ctxBg) {
-            ctxBg.letterSpacing = Math.round(11 * 0.94) + 'px';
+        if ('letterSpacing' in context) {
+            context.letterSpacing = Math.round(11 * 0.94 * scale) + 'px';
         }
-        ctxBg.textAlign = 'right';
-        ctxBg.fillText(txtPenguin, 220, Math.round(bannerY + bannerHeight / 2));
+        context.textAlign = 'right';
+        context.fillText(txtPenguin, Math.round(220 * scale), Math.round(bannerY + bannerHeight / 2));
 
-        if ('letterSpacing' in ctxBg) {
-            ctxBg.letterSpacing = Math.round(11 * 0.85) + 'px';
+        if ('letterSpacing' in context) {
+            context.letterSpacing = Math.round(11 * 0.85 * scale) + 'px';
         }
-        ctxBg.textAlign = 'left';
-        ctxBg.fillText(txtClassics, 290, Math.round(bannerY + bannerHeight / 2));
+        context.textAlign = 'left';
+        context.fillText(txtClassics, Math.round(290 * scale), Math.round(bannerY + bannerHeight / 2));
 
-        if ('letterSpacing' in ctxBg) {
-            ctxBg.letterSpacing = '0px';
+        if ('letterSpacing' in context) {
+            context.letterSpacing = '0px';
         }
 
         if (penguinLogoImg.complete) {
-            const logoWidth = 28;
-            const logoHeight = 35;
-            ctxBg.drawImage(
+            const logoWidth = Math.round(28 * scale);
+            const logoHeight = Math.round(35 * scale);
+            context.drawImage(
                 penguinLogoImg,
-                Math.round((config.canvas.width - logoWidth) / 2),
+                Math.round(((config.canvas.width - 28) / 2) * scale),
                 Math.round(bannerY + (bannerHeight - logoHeight) / 2),
                 logoWidth,
                 logoHeight
             );
         }
     } else if (state.brand === BRAND_OXFORD) {
-        const bottomMargin = 64;
-        const containerHeight = config.canvas.height - 533 - bottomMargin;
+        const bottomMargin = Math.round(64 * scale);
+        const containerHeight = (config.canvas.height - 533) * scale - bottomMargin;
 
-        ctxBg.fillStyle = '#FFFFFF';
-        ctxBg.fillRect(0, 530, config.canvas.width, containerHeight);
+        context.fillStyle = '#FFFFFF';
+        context.fillRect(0, Math.round(530 * scale), config.canvas.width * scale, containerHeight);
 
         if (oxfordLogoImg.complete) {
-            const logoX = 41;
-            const logoY = 672;
-            const logoWidth = 255;
+            const logoX = Math.round(41 * scale);
+            const logoY = Math.round(672 * scale);
+            const logoWidth = Math.round(255 * scale);
             const logoHeight = Math.round(logoWidth * (24 / 555));
 
-            ctxBg.drawImage(
+            context.drawImage(
                 oxfordLogoImg,
                 logoX,
                 logoY,
@@ -279,34 +295,35 @@ function drawTemplate() {
         }
     } else {
         if (state.isTemplateLoaded) {
-            ctxBg.drawImage(state.templateImg, 0, 0, config.canvas.width, config.canvas.height);
+            context.drawImage(state.templateImg, 0, 0, config.canvas.width * scale, config.canvas.height * scale);
         }
     }
 }
 
-function updateCoverPhoto() {
-    const ctxPhoto = ctx.photo;
-    if (!ctxPhoto) return;
+function updateCoverPhoto(context = ctx.photo, scale = 1, clear = true) {
+    if (!context) return;
 
-    ctxPhoto.clearRect(0, 0, config.canvas.width, config.canvas.height);
+    if (clear) {
+        context.clearRect(0, 0, config.canvas.width * scale, config.canvas.height * scale);
+    }
 
     if (state.isPhotoLoaded && state.originalFit.width > 0) {
         const base = state.originalFit;
         const transform = state.transform;
 
-        const scaledWidth = base.width * transform.scale;
-        const scaledHeight = base.height * transform.scale;
+        const scaledWidth = base.width * transform.scale * scale;
+        const scaledHeight = base.height * transform.scale * scale;
 
-        const centerX = base.x + base.width / 2;
-        const centerY = base.y + base.height / 2;
+        const centerX = (base.x + base.width / 2) * scale;
+        const centerY = (base.y + base.height / 2) * scale;
 
         let drawX = centerX - scaledWidth / 2;
         let drawY = centerY - scaledHeight / 2;
 
-        drawX += transform.panX;
-        drawY += transform.panY;
+        drawX += transform.panX * scale;
+        drawY += transform.panY * scale;
 
-        ctxPhoto.drawImage(
+        context.drawImage(
             state.coverPhoto,
             Math.round(drawX),
             Math.round(drawY),
@@ -316,16 +333,18 @@ function updateCoverPhoto() {
     }
 }
 
-function updateText() {
-    const { author, title, subtitle } = getInputValues();
-    const ctxMain = ctx.main;
-    if (!ctxMain) return;
+function updateText(context = ctx.main, scale = 1, clear = true) {
+    if (!context) return;
 
-    ctxMain.clearRect(0, 0, config.canvas.width, config.canvas.height);
+    if (clear) {
+        context.clearRect(0, 0, config.canvas.width * scale, config.canvas.height * scale);
+    }
+
     if (state.brand) {
-        drawAuthor(author);
-        drawTitle(title);
-        drawSubtitle(subtitle);
+        const { author, title, subtitle } = getInputValues();
+        drawAuthor(author, context, scale);
+        drawTitle(title, context, scale);
+        drawSubtitle(subtitle, context, scale);
     }
 }
 
@@ -368,13 +387,18 @@ function downloadCanvas() {
         return;
     }
 
-    elements.dlCanvas.width = config.canvas.width;
-    elements.dlCanvas.height = config.canvas.height;
+    const scale = elements.exportSize ? parseInt(elements.exportSize.value, 10) : 1;
+    elements.dlCanvas.width = config.canvas.width * scale;
+    elements.dlCanvas.height = config.canvas.height * scale;
 
-    ctxDl.clearRect(0, 0, config.canvas.width, config.canvas.height);
-    ctxDl.drawImage(elements.photoCanvas, 0, 0);
-    ctxDl.drawImage(elements.bgCanvas, 0, 0);
-    ctxDl.drawImage(elements.canvas, 0, 0);
+    ctxDl.imageSmoothingEnabled = true;
+    ctxDl.imageSmoothingQuality = 'high';
+
+    ctxDl.clearRect(0, 0, elements.dlCanvas.width, elements.dlCanvas.height);
+
+    updateCoverPhoto(ctxDl, scale, false);
+    drawTemplate(ctxDl, scale, false);
+    updateText(ctxDl, scale, false);
 
     const imageURL = elements.dlCanvas.toDataURL('image/png');
     const fileNameBase = getInputValues().title || 'classic-cover';
