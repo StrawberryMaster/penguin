@@ -6,7 +6,7 @@
     <title>quibble</title>
     <meta name="description" content="Generate book covers in the style of Penguin, Oxford's World Classics, and others.">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+
     <meta property="og:locale" content="en_US">
     <meta property="og:title" content="quibble">
     <meta property="og:type" content="website">
@@ -25,20 +25,25 @@
 
 <body>
     <div class="container">
-        <div class="row">
+        <header class="sr-only">
+            <h1>quibble, the book cover generator</h1>
+        </header>
+
+        <main class="row">
             <div class="col">
-                <div id="controls">
+                <form id="controls" aria-label="Book cover customization tools" onsubmit="event.preventDefault();">
+
                     <!-- File Upload -->
-                    <div id="file-upload">
-                        <button id="file-button">Choose file</button>
+                    <section id="file-upload" aria-label="Image upload">
+                        <button id="file-button" type="button">Choose file</button>
                         <input type="file" id="file_input"
                             accept="image/jpeg, image/png, image/gif, image/webp, image/bmp, image/svg+xml, image/avif">
                         <span id="file-name">No file chosen</span>
-                    </div>
+                    </section>
 
                     <!-- Image Adjustments -->
-                    <div class="panel">
-                        <h4>Adjust image</h4>
+                    <section class="panel" aria-labelledby="adjustments-heading">
+                        <h2 id="adjustments-heading">Adjust image</h2>
                         <div class="slider-control">
                             <label for="zoom_range">Zoom:</label>
                             <input type="range" id="zoom_range" min="50" max="300" value="100" step="1">
@@ -54,19 +59,19 @@
                             <input type="range" id="pan_y_range" min="-100" max="100" value="0" step="1">
                             <span id="pan_y_value" class="slider-value">0</span>
                         </div>
-                        <button id="reset_image_button" class="control-button">Reset image</button>
-                    </div>
+                        <button id="reset_image_button" class="control-button" type="button">Reset image</button>
+                    </section>
 
                     <!-- Brand Selection -->
-                    <div id="brand-selection" class="panel">
-                        <h4>Select brand</h4>
-                        <button class="brand-button" data-brand="penguin">Penguin</button>
-                        <button class="brand-button" data-brand="oxford">Oxford</button>
-                    </div>
+                    <section id="brand-selection" class="panel" aria-labelledby="brand-heading">
+                        <h2 id="brand-heading">Select brand</h2>
+                        <button class="brand-button" data-brand="penguin" type="button">Penguin</button>
+                        <button class="brand-button" data-brand="oxford" type="button">Oxford</button>
+                    </section>
 
                     <!-- Brand-Specific Inputs -->
-                    <div id="penguin-inputs" class="brand-inputs panel">
-                        <h4>Penguin details</h4>
+                    <section id="penguin-inputs" class="brand-inputs panel" aria-labelledby="penguin-heading">
+                        <h2 id="penguin-heading">Penguin details</h2>
                         <div class="input-container">
                             <input type="text" id="penguin_author" placeholder=" ">
                             <label class="input-label" for="penguin_author">Author</label>
@@ -81,12 +86,12 @@
                         </div>
 
                         <p>Pick an author color:</p>
-                        <button class="color-button" style="background-color: #C6422C" data-color="#C6422C">Red</button>
-                        <button class="color-button" style="background-color: #D28928" data-color="#D28928">Yellow</button>
-                    </div>
+                        <button class="color-button" style="background-color: #C6422C" data-color="#C6422C" aria-label="Author color red" type="button">Red</button>
+                        <button class="color-button" style="background-color: #D28928" data-color="#D28928" aria-label="Author color yellow" type="button">Yellow</button>
+                    </section>
 
-                    <div id="oxford-inputs" class="brand-inputs panel">
-                        <h4>Oxford details</h4>
+                    <section id="oxford-inputs" class="brand-inputs panel" aria-labelledby="oxford-heading">
+                        <h2 id="oxford-heading">Oxford details</h2>
                         <div class="input-container">
                             <input type="text" id="oxford_author" placeholder=" ">
                             <label class="input-label" for="oxford_author">Author</label>
@@ -99,24 +104,26 @@
                             <input type="text" id="oxford_subtitle" placeholder=" ">
                             <label class="input-label" for="oxford_subtitle">Subtitle (optional)</label>
                         </div>
-                    </div>
+                    </section>
 
-                    <button id="download-button">Generate & download cover</button>
+                    <button id="download-button" type="button">Generate & download cover</button>
 
-                </div>
+                </form>
             </div>
 
             <div class="col">
-                <!-- Canvas Stack -->
-                <div id="canvas-wrapper">
+                <!-- Canvas stack -->
+                <figure id="canvas-wrapper">
                     <canvas id="photo_canvas"></canvas>
                     <canvas id="bg_canvas"></canvas>
                     <canvas id="canvas"></canvas>
                     <canvas id="dl_canvas"></canvas>
-                </div>
+                    <figcaption class="sr-only">Live book cover design preview</figcaption>
+                </figure>
             </div>
-        </div>
-        <div id="notification"></div>
+        </main>
+
+        <div id="notification" role="status" aria-live="polite"></div>
     </div>
 
     <footer>
@@ -126,7 +133,6 @@
     </footer>
 
     <script src="js/main.js"></script>
-
 </body>
 
 </html>

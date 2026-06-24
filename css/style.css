@@ -41,6 +41,18 @@
     font-style: normal;
 }
 
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 body,
 html {
     text-align: center;
@@ -79,6 +91,7 @@ button {
     overflow: hidden;
     border: 1px solid gray;
     margin: 0 auto;
+    padding: 0;
     border-radius: 10px;
     box-shadow: 0 3px 13px 1px rgba(0, 0, 0, 0.12);
     transition: transform 0.2s linear;
@@ -121,7 +134,9 @@ button {
 }
 
 #controls {
+    display: block;
     padding: 20px;
+    margin: 0;
 }
 
 .panel {
@@ -129,20 +144,23 @@ button {
     padding: 15px;
     border-radius: 5px;
     border: 1px solid #eee;
+    margin-bottom: 10px;
 }
 
-.panel h4 {
+.panel h2 {
     border-bottom: 1px solid #eee;
     margin-bottom: 15px;
     margin-top: 0;
     padding-bottom: 10px;
     color: #333;
+    font-size: 16px;
+    font-weight: bold;
 }
 
 /* Controls */
 ._controls_sos1r_25 {
-  margin:calc(-1 * var(--spacing-4));
-  display:flex
+  margin: calc(-1 * var(--spacing-4));
+  display: flex;
 }
 
 .panel .slider-control {
@@ -171,7 +189,7 @@ button {
     color: #555;
 }
 
-/* Style for the reset image button */
+/* Reset image button styling */
 .control-button {
     padding: 8px 15px;
     margin-top: 10px;
@@ -205,12 +223,13 @@ button {
 }
 
 #controls input[type="text"] {
-    width: 95%;
+    width: 100%;
     padding: 1rem 0 0.75rem 1rem;
     border: 1px solid #e5e7eb;
     border-radius: 4px;
     font-size: 16px;
     transition: border-color 0.15s ease-in-out;
+    box-sizing: border-box;
 }
 
 #controls input[type="text"]:focus {
@@ -218,8 +237,8 @@ button {
     outline: none;
 }
 
-#controls input[type="text"]:focus+.input-label,
-#controls input[type="text"]:not(:placeholder-shown)+.input-label {
+#controls input[type="text"]:focus + .input-label,
+#controls input[type="text"]:not(:placeholder-shown) + .input-label {
     top: -0.75rem;
     left: 0.75rem;
     font-size: 12px;
@@ -230,7 +249,7 @@ button {
 
 /* File upload */
 #file-upload {
-    margin-bottom: 10px;
+    margin-bottom: 15px;
 }
 
 #file-button {
@@ -297,7 +316,7 @@ button {
     outline-offset: 1px;
 }
 
-/* Download button */
+/* Download action */
 #download-button {
     background: #4CAF50;
     border: none;
@@ -307,7 +326,6 @@ button {
     cursor: pointer;
     font-size: 16px;
     font-weight: bold;
-    margin-top: .5rem;
     padding: .5rem 1rem;
     transition: background 0.2s;
     width: 100%;
@@ -341,10 +359,6 @@ footer {
 }
 
 #file_input {
-    display: none;
-}
-
-#dl_canvas {
     display: none;
 }
 
