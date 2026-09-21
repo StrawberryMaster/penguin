@@ -49,9 +49,23 @@ const elements = {
     photoCanvas: document.getElementById('photo_canvas'),
     bgCanvas: document.getElementById('bg_canvas'),
     dlCanvas: document.getElementById('dl_canvas'),
+    canvasWrapper: document.getElementById('canvas-wrapper'),
+    canvasDropOverlay: document.getElementById('canvas-drop-overlay'),
+
+    // ingestion elements
+    tabDropzone: document.getElementById('tab-dropzone'),
+    tabUrl: document.getElementById('tab-url'),
+    paneDropzone: document.getElementById('pane-dropzone'),
+    paneUrl: document.getElementById('pane-url'),
+    dropZone: document.getElementById('drop-zone'),
     fileInput: document.getElementById('file_input'),
-    fileButton: document.getElementById('file-button'),
+    imageUrlInput: document.getElementById('image_url_input'),
+    loadUrlButton: document.getElementById('load_url_button'),
+    imageStatusBar: document.getElementById('image-status-bar'),
     fileName: document.getElementById('file-name'),
+    clearImageButton: document.getElementById('clear_image_button'),
+
+    // adjustments
     zoomRange: document.getElementById('zoom_range'),
     panXRange: document.getElementById('pan_x_range'),
     panYRange: document.getElementById('pan_y_range'),
@@ -400,18 +414,23 @@ function downloadCanvas() {
     drawTemplate(ctxDl, scale, false);
     updateText(ctxDl, scale, false);
 
-    const imageURL = elements.dlCanvas.toDataURL('image/png');
-    const fileNameBase = getInputValues().title || 'classic-cover';
-    const fileName = fileNameBase.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.png';
+    try {
+        const imageURL = elements.dlCanvas.toDataURL('image/png');
+        const fileNameBase = getInputValues().title || 'classic-cover';
+        const fileName = fileNameBase.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.png';
 
-    const downloadLink = document.createElement('a');
-    downloadLink.href = imageURL;
-    downloadLink.download = fileName;
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
+        const downloadLink = document.createElement('a');
+        downloadLink.href = imageURL;
+        downloadLink.download = fileName;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
 
-    showNotification('Downloading your cover!');
+        showNotification('Downloading your cover!');
+    } catch (err) {
+        console.error("Canvas export failed:", err);
+        showNotification('Export failed, probably due to a canvas security restriction. Please try downloading via a local file.');
+    }
 }
 
 function applyZoom() {
@@ -459,41 +478,6 @@ function resetImageTransform() {
     queuePhotoRender();
 }
 
-function handleFileInput() {
-    if (!elements.fileInput || !elements.fileInput.files || elements.fileInput.files.length === 0) {
-        elements.fileName.textContent = 'No file chosen';
-        return;
-    }
-    const file = elements.fileInput.files[0];
-
-    if (!file.type.startsWith('image/')) {
-        showNotification(`File type "${file.type}" is not supported. Please select an image file.`);
-        elements.fileInput.value = '';
-        elements.fileName.textContent = 'No file chosen';
-        return;
-    }
-
-    elements.fileName.textContent = file.name;
-
-    if (state.activePhotoObjectURL) {
-        URL.revokeObjectURL(state.activePhotoObjectURL);
-    }
-
-    state.activePhotoObjectURL = URL.createObjectURL(file);
-
-    const tempImg = new Image();
-    tempImg.onload = () => {
-        fitImageProportionally(tempImg.naturalWidth, tempImg.naturalHeight);
-        state.coverPhoto.src = state.activePhotoObjectURL;
-    };
-    tempImg.onerror = () => {
-        showNotification('Error loading selected image dimensions.');
-        state.isPhotoLoaded = false;
-        if (ctx.photo) ctx.photo.clearRect(0, 0, config.canvas.width, config.canvas.height);
-    };
-    tempImg.src = state.activePhotoObjectURL;
-}
-
 function fitImageProportionally(imgWidth, imgHeight) {
     if (imgWidth <= 0 || imgHeight <= 0) {
         console.error("Invalid dimensions for proportional fit.");
@@ -520,20 +504,307 @@ function fitImageProportionally(imgWidth, imgHeight) {
     const fitY = targetPhotoYOffset + (targetPhotoHeight - fitHeight) / 2;
 
     state.originalFit = { x: fitX, y: fitY, width: fitWidth, height: fitHeight };
+    resetImageTransform();
+}
+
+/**
+ * loads an image from a File or Blob object into the canvas
+ * object URLs guarantee that the canvas will NOT be tainted on export
+ */
+function loadImageFromBlob(blob, displayName = 'Image') {
+    if (!blob || !blob.type.startsWith('image/')) {
+        showNotification('Invalid image format. Please select an image.');
+        return;
+    }
+
+    if (state.activePhotoObjectURL) {
+        URL.revokeObjectURL(state.activePhotoObjectURL);
+    }
+
+    state.activePhotoObjectURL = URL.createObjectURL(blob);
+
+    const tempImg = new Image();
+    tempImg.onload = () => {
+        fitImageProportionally(tempImg.naturalWidth, tempImg.naturalHeight);
+        state.coverPhoto.src = state.activePhotoObjectURL;
+
+        if (elements.fileName) elements.fileName.textContent = displayName;
+        if (elements.imageStatusBar) elements.imageStatusBar.style.display = 'flex';
+    };
+    tempImg.onerror = () => {
+        showNotification('Error loading image dimensions.');
+        clearLoadedImage();
+    };
+    tempImg.src = state.activePhotoObjectURL;
+}
+
+/**
+ * multi-layer fetcher for remote URLs to convert images to safe local Blobs
+ */
+async function fetchSafeImageBlob(url) {
+    // direct CORS fetch
+    try {
+        const res = await fetch(url, { mode: 'cors' });
+        if (res.ok) {
+            const blob = await res.blob();
+            if (blob.type.startsWith('image/')) return blob;
+        }
+    } catch (e) {
+        console.warn('Direct fetch failed. Retrying with proxy...', e);
+    }
+
+    // high performance image proxy (wsrv.nl)
+    try {
+        const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=webp`;
+        const res = await fetch(proxyUrl);
+        if (res.ok) {
+            const blob = await res.blob();
+            if (blob.type.startsWith('image/') || blob.size > 0) return blob;
+        }
+    } catch (e) {
+        console.warn('Proxy fallback 1 failed. Trying CORS proxy...', e);
+    }
+
+    // general CORS proxy fallback (corsproxy.io)
+    try {
+        const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
+        const res = await fetch(proxyUrl);
+        if (res.ok) {
+            const blob = await res.blob();
+            if (blob.type.startsWith('image/') || blob.size > 0) return blob;
+        }
+    } catch (e) {
+        console.error('All fetch pipelines failed.', e);
+    }
+
+    throw new Error('Unable to fetch image. Please ensure the link is direct or save and drop the file.');
+}
+
+// high-level handler to load an image from any web URL
+async function loadImageFromUrl(rawUrl) {
+    const url = (rawUrl || '').trim();
+    if (!url) {
+        showNotification('Please enter a valid image URL.');
+        return;
+    }
+
+    if (!/^https?:\/\//i.test(url)) {
+        showNotification('URL must start with http:// or https://');
+        return;
+    }
+
+    if (elements.loadUrlButton) {
+        elements.loadUrlButton.classList.add('loading');
+        elements.loadUrlButton.disabled = true;
+    }
+
+    try {
+        const blob = await fetchSafeImageBlob(url);
+        let displayName = 'Web image';
+        try {
+            const parsed = new URL(url);
+            const pathParts = parsed.pathname.split('/').filter(Boolean);
+            displayName = pathParts[pathParts.length - 1] || parsed.hostname;
+        } catch { }
+
+        loadImageFromBlob(blob, displayName);
+        showNotification('Image loaded successfully from URL!');
+        if (elements.imageUrlInput) elements.imageUrlInput.value = '';
+    } catch (err) {
+        console.error(err);
+        showNotification(err.message || 'Error loading image from URL.');
+    } finally {
+        if (elements.loadUrlButton) {
+            elements.loadUrlButton.classList.remove('loading');
+            elements.loadUrlButton.disabled = false;
+        }
+    }
+}
+
+// resets the active photo state and cleans canvas
+function clearLoadedImage() {
+    if (state.activePhotoObjectURL) {
+        URL.revokeObjectURL(state.activePhotoObjectURL);
+        state.activePhotoObjectURL = null;
+    }
+    state.isPhotoLoaded = false;
+    state.coverPhoto.src = '';
+    state.originalFit = { x: 0, y: 0, width: 0, height: 0 };
+    if (ctx.photo) ctx.photo.clearRect(0, 0, config.canvas.width, config.canvas.height);
+
+    if (elements.fileInput) elements.fileInput.value = '';
+    if (elements.imageUrlInput) elements.imageUrlInput.value = '';
+    if (elements.imageStatusBar) elements.imageStatusBar.style.display = 'none';
+    if (elements.fileName) elements.fileName.textContent = 'No file chosen';
 
     resetImageTransform();
 }
 
-function initEventListeners() {
-    if (elements.fileButton) elements.fileButton.addEventListener('click', () => elements.fileInput.click());
-    if (elements.fileInput) elements.fileInput.addEventListener('change', handleFileInput);
+// extracts dropped data
+function handleDroppedData(dataTransfer) {
+    if (!dataTransfer) return;
 
+    if (dataTransfer.files && dataTransfer.files.length > 0) {
+        const file = dataTransfer.files[0];
+        loadImageFromBlob(file, file.name);
+        return;
+    }
+
+    const uriList = dataTransfer.getData('text/uri-list');
+    const plainText = dataTransfer.getData('text/plain');
+    const candidateUrl = uriList || plainText;
+
+    if (candidateUrl && /^https?:\/\//i.test(candidateUrl.trim())) {
+        loadImageFromUrl(candidateUrl.trim());
+    } else {
+        showNotification('No compatible image found in dropped items.');
+    }
+}
+
+/* event listeners setup */
+
+function initEventListeners() {
+    // tabs (upload/URL)
+    if (elements.tabDropzone && elements.tabUrl) {
+        elements.tabDropzone.addEventListener('click', () => {
+            elements.tabDropzone.classList.add('active');
+            elements.tabDropzone.setAttribute('aria-selected', 'true');
+            elements.tabUrl.classList.remove('active');
+            elements.tabUrl.setAttribute('aria-selected', 'false');
+            elements.paneDropzone.classList.add('active');
+            elements.paneUrl.classList.remove('active');
+        });
+
+        elements.tabUrl.addEventListener('click', () => {
+            elements.tabUrl.classList.add('active');
+            elements.tabUrl.setAttribute('aria-selected', 'true');
+            elements.tabDropzone.classList.remove('active');
+            elements.tabDropzone.setAttribute('aria-selected', 'false');
+            elements.paneUrl.classList.add('active');
+            elements.paneDropzone.classList.remove('active');
+            if (elements.imageUrlInput) elements.imageUrlInput.focus();
+        });
+    }
+
+    // drop zone user interactions
+    if (elements.dropZone && elements.fileInput) {
+        elements.dropZone.addEventListener('click', () => elements.fileInput.click());
+        elements.dropZone.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                elements.fileInput.click();
+            }
+        });
+
+        elements.fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                loadImageFromBlob(file, file.name);
+            }
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            elements.dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                elements.dropZone.classList.add('drag-over');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            elements.dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                elements.dropZone.classList.remove('drag-over');
+            });
+        });
+
+        elements.dropZone.addEventListener('drop', (e) => {
+            handleDroppedData(e.dataTransfer);
+        });
+    }
+
+    // direct drag-to-canvas interaction
+    if (elements.canvasWrapper && elements.canvasDropOverlay) {
+        ['dragenter', 'dragover'].forEach(eventName => {
+            elements.canvasWrapper.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                elements.canvasDropOverlay.classList.add('active');
+            });
+        });
+
+        elements.canvasDropOverlay.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            elements.canvasDropOverlay.classList.remove('active');
+        });
+
+        elements.canvasDropOverlay.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            elements.canvasDropOverlay.classList.remove('active');
+            handleDroppedData(e.dataTransfer);
+        });
+    }
+
+    // prevent default browser behavior of opening dragged files outside drop zones
+    window.addEventListener('dragover', (e) => e.preventDefault());
+    window.addEventListener('drop', (e) => e.preventDefault());
+
+    // URL ingestion
+    if (elements.loadUrlButton && elements.imageUrlInput) {
+        elements.loadUrlButton.addEventListener('click', () => {
+            loadImageFromUrl(elements.imageUrlInput.value);
+        });
+
+        elements.imageUrlInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                loadImageFromUrl(elements.imageUrlInput.value);
+            }
+        });
+    }
+
+    // clear image button
+    if (elements.clearImageButton) {
+        elements.clearImageButton.addEventListener('click', clearLoadedImage);
+    }
+
+    // clipboard paste (Ctrl+V / Cmd+V)
+    window.addEventListener('paste', (e) => {
+        // if actively typing inside one of the text inputs, allow standard pasting
+        if (['penguin_author', 'penguin_title', 'penguin_subtitle', 'oxford_author', 'oxford_title', 'oxford_subtitle'].includes(document.activeElement?.id)) {
+            return;
+        }
+
+        const items = e.clipboardData?.items;
+        if (!items) return;
+
+        for (const item of items) {
+            if (item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                if (file) {
+                    loadImageFromBlob(file, 'Pasted image');
+                    showNotification('Pasted image applied!');
+                    return;
+                }
+            }
+        }
+
+        const pastedText = e.clipboardData?.getData('text')?.trim();
+        if (pastedText && /^https?:\/\/.+/i.test(pastedText)) {
+            loadImageFromUrl(pastedText);
+        }
+    });
+
+    // adjustment controls
     if (elements.zoomRange) elements.zoomRange.addEventListener('input', applyZoom);
     if (elements.panXRange) elements.panXRange.addEventListener('input', applyPan);
     if (elements.panYRange) elements.panYRange.addEventListener('input', applyPan);
-
     if (elements.resetImageButton) elements.resetImageButton.addEventListener('click', resetImageTransform);
 
+    // brand and color controls
     elements.brandButtons.forEach(button => {
         button.addEventListener('click', () => switchBrand(button.dataset.brand));
     });
@@ -552,6 +823,7 @@ function initEventListeners() {
 
     if (elements.downloadButton) elements.downloadButton.addEventListener('click', downloadCanvas);
 
+    // image load event hooks
     state.templateImg.onload = () => {
         state.isTemplateLoaded = true;
         drawTemplate();
@@ -566,7 +838,7 @@ function initEventListeners() {
         queuePhotoRender();
     };
     state.coverPhoto.onerror = () => {
-        showNotification('Error loading image.');
+        showNotification('Error rendering cover image.');
         state.isPhotoLoaded = false;
         if (ctx.photo) ctx.photo.clearRect(0, 0, config.canvas.width, config.canvas.height);
     };
@@ -605,7 +877,7 @@ function init() {
     initEventListeners();
     switchBrand(BRAND_PENGUIN);
 
-    console.log("Cover generator initialized.");
+    console.log("quibble initialized.");
 }
 
 document.addEventListener('DOMContentLoaded', init);

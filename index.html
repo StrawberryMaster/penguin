@@ -112,15 +112,85 @@
             <div class="col">
                 <form id="controls" aria-label="Book cover customization tools" onsubmit="event.preventDefault();">
 
-                    <!-- File Upload -->
-                    <section id="file-upload" aria-label="Image upload">
-                        <button id="file-button" type="button">Choose file</button>
-                        <input type="file" id="file_input"
-                            accept="image/jpeg, image/png, image/gif, image/webp, image/bmp, image/svg+xml, image/avif">
-                        <span id="file-name">No file chosen</span>
+                    <!-- File upload -->
+                    <section id="image-source-panel" class="panel" aria-labelledby="image-source-heading">
+                        <h2 id="image-source-heading">Cover image</h2>
+
+                        <!-- Segmented switcher -->
+                        <div class="source-tabs" role="tablist" aria-label="Image source selection">
+                            <button type="button" class="tab-btn active" id="tab-dropzone" role="tab"
+                                aria-selected="true" aria-controls="pane-dropzone">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Upload / drop
+                            </button>
+                            <button type="button" class="tab-btn" id="tab-url" role="tab" aria-selected="false"
+                                aria-controls="pane-url">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                                </svg>
+                                Image URL
+                            </button>
+                        </div>
+
+                        <!-- Drop zone pane -->
+                        <div id="pane-dropzone" class="tab-pane active" role="tabpanel">
+                            <div id="drop-zone" class="drop-zone" tabindex="0" role="button"
+                                aria-label="Drop image here or click to browse">
+                                <input type="file" id="file_input"
+                                    accept="image/jpeg, image/png, image/gif, image/webp, image/bmp, image/svg+xml, image/avif">
+                                <div class="drop-zone-content">
+                                    <div class="drop-zone-icon">
+                                        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                            <circle cx="8.5" cy="8.5" r="1.5" />
+                                            <polyline points="21 15 16 10 5 21" />
+                                        </svg>
+                                    </div>
+                                    <p class="drop-zone-text"><strong>Drag & drop image</strong> or <span class="browse-link">browse</span></p>
+                                    <p class="drop-zone-subtext">or press Ctrl+V to paste</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- URL input pane -->
+                        <div id="pane-url" class="tab-pane" role="tabpanel">
+                            <div class="url-input-group">
+                                <input type="url" id="image_url_input" placeholder="https://example.com/image.jpg"
+                                    spellcheck="false" autocomplete="off" aria-label="Direct image URL">
+                                <button type="button" id="load_url_button" class="btn-load">
+                                    <span class="btn-text">Load</span>
+                                    <span class="btn-spinner" aria-hidden="true"></span>
+                                </button>
+                            </div>
+                            <p class="url-hint">Paste any image link from Unsplash, Wikimedia, Imgur, etc.</p>
+                        </div>
+
+                        <!-- Image status chip -->
+                        <div id="image-status-bar" class="image-status-bar" style="display: none;">
+                            <div class="status-info">
+                                <span class="status-dot"></span>
+                                <span id="file-name" class="status-name">No image loaded</span>
+                            </div>
+                            <button type="button" id="clear_image_button" class="btn-clear" title="Remove image"
+                                aria-label="Remove image">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </button>
+                        </div>
                     </section>
 
-                    <!-- Image Adjustments -->
+                    <!-- Image adjustments -->
                     <section class="panel" aria-labelledby="adjustments-heading">
                         <h2 id="adjustments-heading">Adjust image</h2>
                         <div class="slider-control">
@@ -201,7 +271,6 @@
                     </section>
 
                     <button id="download-button" type="button">Generate & download cover</button>
-
                 </form>
             </div>
 
@@ -212,6 +281,15 @@
                     <canvas id="bg_canvas"></canvas>
                     <canvas id="canvas"></canvas>
                     <canvas id="dl_canvas"></canvas>
+                    <div id="canvas-drop-overlay" class="canvas-drop-overlay">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                        <span>Drop image to apply to cover</span>
+                    </div>
                     <figcaption class="sr-only">Live book cover design preview</figcaption>
                 </figure>
             </div>

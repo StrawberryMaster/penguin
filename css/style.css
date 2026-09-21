@@ -397,3 +397,283 @@ footer {
 .brand-inputs {
     display: none;
 }
+
+/* image source component */
+.source-tabs {
+    display: flex;
+    background: #eef1f4;
+    padding: 3px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    gap: 4px;
+}
+
+.tab-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 10px;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    color: #555;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.tab-btn:hover {
+    color: #222;
+}
+
+.tab-btn.active {
+    background: #ffffff;
+    color: #111;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+/* drag & drop zone */
+.drop-zone {
+    position: relative;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    padding: 22px 14px;
+    background: #fafafa;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s, transform 0.15s;
+    outline: none;
+}
+
+.drop-zone:hover,
+.drop-zone:focus-visible {
+    border-color: #f26b21;
+    background-color: #fff9f6;
+}
+
+.drop-zone.drag-over {
+    border-color: #f26b21;
+    background-color: #ffede5;
+    transform: scale(1.01);
+}
+
+.drop-zone input[type="file"] {
+    display: none;
+}
+
+.drop-zone-icon {
+    color: #888;
+    margin-bottom: 6px;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.drop-zone:hover .drop-zone-icon,
+.drop-zone.drag-over .drop-zone-icon {
+    color: #f26b21;
+    transform: translateY(-2px);
+}
+
+.drop-zone-text {
+    margin: 0;
+    font-size: 14px;
+    color: #333;
+}
+
+.drop-zone-text .browse-link {
+    color: #f26b21;
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+.drop-zone-subtext {
+    margin: 4px 0 0 0;
+    font-size: 11px;
+    color: #888;
+}
+
+/* URL input group */
+.url-input-group {
+    display: flex;
+    gap: 8px;
+}
+
+.url-input-group input[type="url"] {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: #fff;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.url-input-group input[type="url"]:focus {
+    border-color: #f26b21;
+    box-shadow: 0 0 0 2px rgba(242, 107, 33, 0.15);
+    outline: none;
+}
+
+.btn-load {
+    position: relative;
+    padding: 0 16px;
+    background: #333;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 65px;
+    transition: background-color 0.2s;
+}
+
+.btn-load:hover {
+    background: #111;
+}
+
+.btn-load:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.btn-spinner {
+    display: none;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+.btn-load.loading .btn-text {
+    display: none;
+}
+
+.btn-load.loading .btn-spinner {
+    display: block;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.url-hint {
+    margin: 6px 0 0 2px;
+    font-size: 11px;
+    color: #888;
+    text-align: left;
+}
+
+/* image active status badge */
+.image-status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding: 7px 10px;
+    background: #f0f7f0;
+    border: 1px solid #d4ecd5;
+    border-radius: 6px;
+    animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.status-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #28a745;
+    flex-shrink: 0;
+}
+
+.status-name {
+    font-size: 12px;
+    color: #2b542c;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 250px;
+    text-align: left;
+}
+
+.btn-clear {
+    background: none;
+    border: none;
+    color: #718871;
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: color 0.15s, background-color 0.15s;
+}
+
+.btn-clear:hover {
+    color: #c92a2a;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* drag & drop overlay on the canvas */
+.canvas-drop-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(242, 107, 33, 0.88);
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 10px;
+    z-index: 20;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    transform: scale(0.98);
+}
+
+.canvas-drop-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: scale(1);
+}
